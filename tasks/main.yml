@@ -1,4 +1,3 @@
----
 
 - name: get fact
   ios_facts: 
@@ -7,6 +6,16 @@
 - debug: 
     msg: "facts: {{ ansible_facts }}"
   tags: debug
+
+- name: fetch archive status
+  ios_command: 
+    commands: "show archive status"
+  register: show_archive_status
+
+- name: check if there is another archive already running
+  fail:
+    msg: Stopping because there is another archive download-sw in progress...
+  when: not show_archive_status.stdout[0] | regex_search('IDLE')
 
 - debug: 
     msg: "stacks: {{ ansible_facts.net_stacked_models|length }}"

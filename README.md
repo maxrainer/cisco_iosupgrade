@@ -1,38 +1,62 @@
-Role Name
-=========
+# Cisco IOS Image Upgrade
 
-A brief description of the role goes here.
+Upgrades Images on Cisco IOS Devices. Uses "archive" command. 
 
-Requirements
-------------
+## Overview
 
-Any pre-requisites that may not be covered by Ansible itself or the role should be mentioned here. For instance, if the role uses the EC2 module, it may be a good idea to mention in this section that the boto package is required.
+This is an Ansible Role for network engineers and operators. It handles all necessary steps to Upgrade an IOS Image including Flash cleanup, Cisco Catalyst Stack support.
+It uses IOS command: archive. 
 
-Role Variables
---------------
+## Prerequests
 
-A description of the settable variables for this role should go here, including any variables that are in defaults/main.yml, vars/main.yml, and any variables that can/should be set via parameters to the role. Any variables that are read from other roles and/or the global scope (ie. hostvars, group vars, etc.) should be mentioned here as well.
+1) Cisco IOS Device supporting "archive" command
+2) SCP Server
 
-Dependencies
-------------
+## Quick Start
 
-A list of other roles hosted on Galaxy should go here, plus any details in regards to parameters that may need to be set for other roles, or variables that are used from other roles.
+1) Download the role from ansible-galaxy into your roles directory
+```
+ansible-galaxy install -p roles maxrainer.iosupgrade
+```
 
-Example Playbook
-----------------
+
+## Role Variables
+
+### should Ansible clean Flash from all images found and not needed? 
+### does not delete the active image
+ios_flash_clean_enabled: False
+
+### Cisco CCO data
+ios_image_string: binary_file_name  (do not add .bin here)
+ios_image_md5: image_md5_checksum   (CCO provided checksum)
+ios_image_tar: image_tarball        (CCO provided)
+### SCP Credentials
+ios_upload_server: 127.0.0.1        (SCP Server)
+ios_upload_username: user           
+ios_upload_password: changme
+ios_upload_protocol: scp
+
+# this is be needed for cleanup flash 
+ios_platform: c2960x
+
+# maybe changed
+ios_verify_timeout: 90
+debug: False 
+
+## Example Playbook
 
 Including an example of how to use your role (for instance, with variables passed in as parameters) is always nice for users too:
 
-    - hosts: servers
+    - hosts: cisco
       roles:
          - { role: username.rolename, x: 42 }
 
 License
 -------
 
-BSD
+GNU GENERAL PUBLIC LICENSE
 
 Author Information
 ------------------
 
-An optional section for the role authors to include contact information, or a website (HTML is not allowed).
+mrainer@redhat.com

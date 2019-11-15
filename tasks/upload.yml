@@ -2,12 +2,20 @@
 # 19.03.2019 18:14:51: grz-labor-sw4#
 # archive download-sw /leave-old-sw scp://nts:rfc1918@172.20.80.7/c2960x-universalk9-tar.152-4.E7.tar
 # 
+- debug: 
+    msg: "archive download-sw /leave-old-sw {{ ios_upload_protocol }}://{{ ios_upload_username }}:{{ ios_upload_password }}@{{ ios_upload_server }}/{{ ios_image_tar }}"
+  tags: debug
 
 - name: download archive {{ ios_image_tar}}
   ios_command:
     commands: "archive download-sw /leave-old-sw {{ ios_upload_protocol }}://{{ ios_upload_username }}:{{ ios_upload_password }}@{{ ios_upload_server }}/{{ ios_image_tar }}"
     wait_for: result[0] contains All software images installed
     retries: 1
+  register: debugoutput
+  ignore_errors: yes
   vars:
     ansible_command_timeout: 3600
+  tags: upload
 
+- debug:
+    msg: "debugoutput: {{ debugoutput }}"

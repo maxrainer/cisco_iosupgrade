@@ -25,7 +25,6 @@
       - "show version | include {{ ios_show_version_image }}"
       - "show boot | include {{ ios_show_boot_path_list }}"
   register: boot_vars
-  when: inner_stack_count == "1"
 
 - debug: 
     msg: "boot vars: {{ boot_vars }}"
@@ -57,7 +56,6 @@
   vars: 
     clean_stack_array: "{{ inner_stack_array }}"
     clean_stack_count: "{{ inner_stack_count }}"
-    clean_flash_dir: "{{ flash_dir }}"
     clean_boot_vars: "{{ boot_vars }}"
   loop_control:
     loop_var: clean_stack_id
@@ -76,8 +74,17 @@
     commands: 
       - "show version | include {{ ios_show_version_image }}"
       - "show boot | include {{ ios_show_boot_path_list }}"
-  register: boot_vars
-  when: not image_ready and outer_item == "1"
+  register: boot_vars_2
+  when: (not image_ready) and outer_item == "1"
+
+- set_fact:
+    boot_vars: boot_vars2
+  when: (not image_ready) and outer_item == "1"
+
+- name: unser debug
+  debug: 
+    msg: "{{ boot_vars }}"
+  tags: debug
 
 #
 # we only reach this if something is wrong
@@ -85,7 +92,7 @@
 - name: fail if image is missing on stack members other than master
   fail: 
     msg: "IOS image is missing on stack member {{ outer_item }}. Something is wrong."
-  when: not image_ready and (outer_item != 1)
+  when: (not image_ready) and (outer_item != 1)
 
 #
 # verify image in directory
@@ -98,24 +105,23 @@
       - result[0] contains {{ ios_image_md5 }}
     retries: 1
   vars:
-    ansible_command_timeout: 90
+    ansible_command_timeout: 300
   when: image_ready
 
 #
 # verify boot variable set when we are in loop stack master
 # 
 
+
 - set_fact:
-    calculated_image: "flash:{{ ios_image_string }}/{{ ios_image_string }}.bin"
-    boot_image: "{{ clean_boot_vars.stdout_lines[1] }}"
-  when: outer_item == "1"
+    calculated_image: "flash:/?{{ ios_image_string }}/{{ ios_image_string }}.bin"
+    boot_image: "{{ boot_vars.stdout_lines[1][(outer_item | int) - 1] }}"
 
 - debug:
     msg: "boot image: {{ boot_image }} - calculated image: {{ calculated_image }}"
-  when: outer_item == "1"
   tags: debug
 
 - name: fail if boot variable not set correctly
   fail: 
     msg: device boot variable differs from uploaded image
-  when: outer_item == "1" and boot_image != calculated_image
+  when: not boot_image | regex_search(calculated_image)
