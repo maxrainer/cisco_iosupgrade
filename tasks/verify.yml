@@ -82,7 +82,7 @@
   when: (not image_ready) and outer_item == "1"
 
 - name: unser debug
-  debug: 
+  debug:
     msg: "{{ boot_vars }}"
   tags: debug
 
@@ -90,7 +90,7 @@
 # we only reach this if something is wrong
 #
 - name: fail if image is missing on stack members other than master
-  fail: 
+  fail:
     msg: "IOS image is missing on stack member {{ outer_item }}. Something is wrong."
   when: (not image_ready) and (outer_item != 1)
 
@@ -100,7 +100,7 @@
 - name: "verify IOS Image: {{ image_path }}"
   ios_command:
     commands: 'verify /md5 {{ image_path }}'
-    wait_for: 
+    wait_for:
       - result[0] contains Done!
       - result[0] contains {{ ios_image_md5 }}
     retries: 1
@@ -112,7 +112,6 @@
 # verify boot variable set when we are in loop stack master
 # 
 
-
 - set_fact:
     calculated_image: "flash:/?{{ ios_image_string }}/{{ ios_image_string }}.bin"
     boot_image: "{{ boot_vars.stdout_lines[1][(outer_item | int) - 1] }}"
@@ -122,6 +121,6 @@
   tags: debug
 
 - name: fail if boot variable not set correctly
-  fail: 
+  fail:
     msg: device boot variable differs from uploaded image
   when: not boot_image | regex_search(calculated_image)
