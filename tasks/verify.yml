@@ -1,0 +1,121 @@
+#
+# we need to know if we are a stack 
+# only stacks have flash1: and flash2: ....
+# 
+# vars from outer: 
+# inner_stack_count, inner_stack_array, outer_item
+#
+
+- set_fact: 
+    flash_string: "flash{{ outer_item }}:"
+  when: inner_stack_count  >= "2"
+
+- set_fact: 
+    flash_string: "flash:"
+  when: inner_stack_count  == "1"
+
+- name: "get dir {{ flash_string }}"
+  ios_command:
+    commands: "dir {{ flash_string }}"
+  register: flash_dir
+
+- name: "get boot and running IOS variables"
+  ios_command: 
+    commands: 
+      - "show version | include {{ ios_show_version_image }}"
+      - "show boot | include {{ ios_show_boot_path_list }}"
+  register: boot_vars
+  when: inner_stack_count == "1"
+
+- debug: 
+    msg: "boot vars: {{ boot_vars }}"
+  tags: debug
+
+# 
+# looking for a directory that maybe contains image 
+#
+- debug: 
+    msg: "image: {{ ios_image_string }}, flashdir: {{ flash_dir.stdout[0] }}"
+  tags: debug
+
+- set_fact:
+    image_ready: "{{ true if ( flash_dir.stdout[0] | regex_search('.*' + ios_image_string + '.*') ) else false }}"
+    image_path: "{{ flash_string }}{{ ios_image_string }}/{{ ios_image_string }}.bin"
+
+- debug:
+    msg: "image ready: {{ image_ready }}"
+  tags: debug
+
+#
+# verify enough space left on flash on every stack member
+# if we have to upload new image
+# loop into cleanflash for every stack member
+#
+- name: verify space left on flash(s)
+  include_tasks: cleanflash.yml
+  loop: "{{ inner_stack_count_array }}"
+  vars: 
+    clean_stack_array: "{{ inner_stack_array }}"
+    clean_stack_count: "{{ inner_stack_count }}"
+    clean_flash_dir: "{{ flash_dir }}"
+    clean_boot_vars: "{{ boot_vars }}"
+  loop_control:
+    loop_var: clean_stack_id
+  when: not image_ready and outer_item == "1"
+
+#
+# start uploading image if 
+# image is NOT on stack member 1
+#
+- name: start uploading image
+  include_tasks: upload.yml
+  when: not image_ready and outer_item == "1"
+
+- name: "get boot and running IOS variables again after uploading image"
+  ios_command: 
+    commands: 
+      - "show version | include {{ ios_show_version_image }}"
+      - "show boot | include {{ ios_show_boot_path_list }}"
+  register: boot_vars
+  when: not image_ready and outer_item == "1"
+
+#
+# we only reach this if something is wrong
+#
+- name: fail if image is missing on stack members other than master
+  fail: 
+    msg: "IOS image is missing on stack member {{ outer_item }}. Something is wrong."
+  when: not image_ready and (outer_item != 1)
+
+#
+# verify image in directory
+#
+- name: "verify IOS Image: {{ image_path }}"
+  ios_command:
+    commands: 'verify /md5 {{ image_path }}'
+    wait_for: 
+      - result[0] contains Done!
+      - result[0] contains {{ ios_image_md5 }}
+    retries: 1
+  vars:
+    ansible_command_timeout: 90
+  when: image_ready
+
+#
+# verify boot variable set when we are in loop stack master
+# 
+
+- set_fact:
+    calculated_image: "flash:{{ ios_image_string }}/{{ ios_image_string }}.bin"
+    boot_image: "{{ clean_boot_vars.stdout_lines[1] }}"
+  when: outer_item == "1"
+
+- debug:
+    msg: "boot image: {{ boot_image }} - calculated image: {{ calculated_image }}"
+  when: outer_item == "1"
+  tags: debug
+
+- name: fail if boot variable not set correctly
+  fail: 
+    msg: device boot variable differs from uploaded image
+  when: outer_item == "1" and boot_image != calculated_image

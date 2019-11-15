@@ -1,0 +1,20 @@
+---
+#
+# these must be changed
+
+ios_flash_clean_enabled: False
+
+ios_image_string: binary_file_name
+ios_image_md5: image_md5_checksum
+ios_image_tar: image_tarball
+ios_upload_server: 127.0.0.1
+ios_upload_username: user
+ios_upload_password: changme
+ios_upload_protocol: scp
+
+# this is be needed for cleanup flash 
+ios_platform: c2960x
+
+# maybe changed
+ios_verify_timeout: 90
+debug: False 

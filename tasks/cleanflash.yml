@@ -1,0 +1,46 @@
+#
+# variables from outer loop:
+# clean_stack_array: "{{ inner_stack_array }}"
+# clean_stack_count: "{{ inner_stack_count }}"
+# clean_flash_dir: "{{ flash_dir }}"
+# clean_boot_vars: "{{ boot_vars }}"
+# loop_var: clean_stack_id
+#
+
+- debug: 
+    msg: "FLASH {{ clean_flash_dir.stdout_lines[0] }}"
+  tags: debug
+
+- set_fact:
+    ignorelist: []
+- set_fact:
+    ignorelist: "{{ ignorelist + clean_boot_vars.stdout_lines[0] }}"
+- set_fact:
+    ignorelist: "{{ ignorelist + clean_boot_vars.stdout_lines[1] }}"
+
+- debug: 
+    msg: "IGNORE {{ ignorelist }}"
+  tags: debug
+
+- set_fact: 
+    del_files: "{{ clean_flash_dir.stdout_lines[0] | cleanfile(ignorelist, ios_platform) }}"
+  debugger: on_failed
+
+- debug: 
+    msg: "file(s) to be deleted: {{ del_files }}"
+  tags: debug
+
+- set_fact: 
+    flash_string: "flash{{ clean_stack_id }}:"
+  when: clean_stack_id  >= "2"
+- set_fact: 
+    flash_string: "flash:"
+  when: clean_stack_id  == "1"
+
+- name: delete unnecessary files and directories from flash
+  ios_command:
+    commands: "delete /force /recursive {{ flash_string }}{{ item }}"
+  vars:
+    ansible_command_timeout: 20
+  with_items: "{{ del_files }}"
+  when: ios_flash_clean_enabled

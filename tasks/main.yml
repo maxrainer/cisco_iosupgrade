@@ -1,0 +1,33 @@
+---
+
+- name: get fact
+  ios_facts: 
+    gather_subset: hardware
+
+- debug: 
+    msg: "facts: {{ ansible_facts }}"
+  tags: debug
+
+- debug: 
+    msg: "stacks: {{ ansible_facts.net_stacked_models|length }}"
+  tags: debug
+
+- set_fact: 
+    stack_count: "{{ ansible_facts.net_stacked_models|length }}"
+    stack_count_array: []
+
+- set_fact: stack_count_array="{{ stack_count_array + [ item ] }}"
+  with_sequence: start=1 end={{ stack_count }}
+
+- debug: 
+    msg: "SCA: {{ stack_count_array }}"
+  tags: debug
+
+- name: loop through stacks 
+  include_tasks: verify.yml
+  loop: "{{ stack_count_array }}"
+  vars:
+    inner_stack_count: "{{ stack_count }}"
+    inner_stack_count_array: "{{ stack_count_array }}"
+  loop_control:
+    loop_var: outer_item
