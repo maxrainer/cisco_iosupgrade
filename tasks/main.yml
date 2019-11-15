@@ -1,4 +1,4 @@
-
+---
 - name: get fact
   ios_facts: 
     gather_subset: hardware
