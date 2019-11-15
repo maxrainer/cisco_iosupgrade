@@ -16,9 +16,8 @@ It uses IOS command: archive.
 
 1) Download the role from ansible-galaxy into your roles directory
 ```
-ansible-galaxy install -p roles maxrainer.iosupgrade
+ansible-galaxy install -p roles maxrainer.cisco_iosupgrade
 ```
-
 
 ## Role Variables
 
@@ -45,11 +44,25 @@ debug: False
 
 ## Example Playbook
 
-Including an example of how to use your role (for instance, with variables passed in as parameters) is always nice for users too:
+```
+- hosts: ios
+  connection: network_cli
+  gather_facts: no
+  roles:
+    - maxrainer.cisco_iosupgrade
+  vars:
+    - ios_platform: c3560c405ex
+    - ios_image_string: c3560c405ex-universalk9-mz.152-2.E9
+    - ios_image_md5: e58fdcc94e989a6d07d140f0d5f6b6f3
+    - ios_image_tar: c3560c405ex-universalk9-tar.152-2.E9.tar
+    - ios_upload_server: 10.10.10.10
+    - ios_upload_username: scp_user
+    - ios_upload_password: changeme
+```
 
-    - hosts: cisco
-      roles:
-         - { role: username.rolename, x: 42 }
+## Flow Diagram 
+
+![alt text](flow.jpg?raw=true "FlowDiagram")
 
 License
 -------
